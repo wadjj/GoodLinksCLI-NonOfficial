@@ -65,6 +65,22 @@ test("content command returns truncated JSON-ready content", async () => {
   });
 });
 
+test("content command does not truncate by default", async () => {
+  const longContent = "x".repeat(12001);
+  const client = {
+    async getContent() {
+      return longContent;
+    }
+  };
+
+  const result = await runContentCommand(client, "abc", {
+    format: "markdown"
+  });
+
+  assert.equal(result.content.length, 12001);
+  assert.equal(result.truncated, false);
+});
+
 test("tags command returns tags", async () => {
   const client = {
     async getTags() {
@@ -74,4 +90,3 @@ test("tags command returns tags", async () => {
 
   assert.deepEqual(await runTagsCommand(client), ["ai", "product"]);
 });
-

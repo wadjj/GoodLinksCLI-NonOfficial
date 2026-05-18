@@ -19,7 +19,7 @@ export interface GoodLinksConfig {
   token?: string;
   defaultFormat: "json" | "table" | "md";
   defaultContentFormat: "markdown" | "plaintext" | "html";
-  defaultMaxChars: number;
+  defaultMaxChars: number | null;
 }
 
 export interface StoredConfig {
@@ -27,7 +27,7 @@ export interface StoredConfig {
   token?: string;
   defaultFormat?: "json" | "table" | "md";
   defaultContentFormat?: "markdown" | "plaintext" | "html";
-  defaultMaxChars?: number;
+  defaultMaxChars?: number | null;
 }
 
 export interface ResolveConfigOptions {
@@ -99,6 +99,6 @@ export async function resolveConfig(
     token: flags.token ?? env.GOODLINKS_API_TOKEN ?? stored.token,
     defaultFormat: stored.defaultFormat ?? "json",
     defaultContentFormat: stored.defaultContentFormat ?? "markdown",
-    defaultMaxChars: stored.defaultMaxChars ?? 12000
+    defaultMaxChars: stored.defaultMaxChars ?? null
   };
 }

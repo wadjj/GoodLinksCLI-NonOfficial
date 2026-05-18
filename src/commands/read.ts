@@ -103,7 +103,10 @@ export async function runGetCommand(
       format,
       autoDownload: options.autoDownload
     });
-    const truncated = truncateText(content, options.maxChars ?? 12000);
+    const truncated =
+      options.maxChars === undefined
+        ? { text: content, truncated: false }
+        : truncateText(content, options.maxChars);
     result.content = truncated.text;
     result.contentFormat = format;
     result.truncated = truncated.truncated;
@@ -127,7 +130,10 @@ export async function runContentCommand(
     format,
     autoDownload: options.autoDownload
   });
-  const truncated = truncateText(content, options.maxChars ?? 12000);
+  const truncated =
+    options.maxChars === undefined
+      ? { text: content, truncated: false }
+      : truncateText(content, options.maxChars);
   return {
     id,
     format,

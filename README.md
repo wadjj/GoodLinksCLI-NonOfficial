@@ -2,7 +2,7 @@
 
 一个给 agent 和本地脚本使用的 GoodLinks 本地 API CLI。
 
-核心目标：默认省 token、省时间。列表和搜索只返回紧凑 metadata；文章正文只有明确调用 `content` 或 `get --with-content` 时才读取；删除默认 dry-run。
+核心目标：典型检索场景下快、准、全。列表和搜索只返回紧凑 metadata；文章正文只有明确调用 `content` 或 `get --with-content` 时才读取；删除默认 dry-run。省 token 重要，但不应牺牲检索准确性。
 
 ## 前置条件
 
@@ -77,6 +77,7 @@ goodlinks list untagged --limit 50 --fields id,title,url,summary,tags
 goodlinks search "agent memory" --tag topic/ai --limit 10
 goodlinks get abc123
 goodlinks get abc123 --with-content --max-chars 8000
+goodlinks content abc123 --format markdown
 goodlinks content abc123 --format markdown --max-chars 12000
 goodlinks content abc123 --auto-download=false
 ```
@@ -137,7 +138,7 @@ goodlinks highlights export abc123
 
 ```bash
 goodlinks list untagged --limit 20 --fields id,title,url,summary,wordCount,addedAt
-goodlinks content <id> --format markdown --max-chars 8000
+goodlinks content <id> --format markdown
 goodlinks edit <id> --summary "<400 字符以内摘要>" --add-tag summarized --add-tag topic/ai
 ```
 
@@ -148,5 +149,5 @@ goodlinks edit <id> --summary "<400 字符以内摘要>" --add-tag summarized --
 - 删除默认 dry-run。
 - 真实删除只认显式 `--yes`。
 - `content` 默认 `autoDownload=true`，优先保证拿到正文；如果只想读已缓存内容，用 `--auto-download=false`。
+- `content` 默认不截断；需要预览、批量维护或控制输出时，显式传 `--max-chars`。
 - CLI 不内置 AI summarization；总结由外部 agent 完成，CLI 只负责读写 GoodLinks。
-

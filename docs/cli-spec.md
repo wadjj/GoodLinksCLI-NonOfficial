@@ -51,6 +51,7 @@ GoodLinks 从 3.2 起提供本地 REST API：
 - 删除默认 dry-run，必须显式 `--yes` 才真正删除。
 - 删除只要求 `--yes`，不再额外做交互式二次确认。
 - `content` 默认 `autoDownload=true`，优先保证 agent 第一次读取时能拿到正文；需要速度和无副作用时可显式传 `--auto-download=false`。
+- `content` 和 `get --with-content` 默认不截断；需要预览、批量维护或控制输出时显式传 `--max-chars`。
 
 ## 推荐技术栈
 
@@ -91,7 +92,7 @@ Config file:
   "token": "stored only if the user explicitly configures it",
   "defaultFormat": "json",
   "defaultContentFormat": "markdown",
-  "defaultMaxChars": 12000
+  "defaultMaxChars": null
 }
 ```
 
@@ -293,7 +294,7 @@ goodlinks content abc123 --format plaintext --auto-download=false
 
 - `format=markdown`
 - `autoDownload=true`
-- `maxChars=12000`
+- 不截断正文；只有显式传 `--max-chars` 时才截断
 
 ### `goodlinks add <url>`
 
@@ -461,7 +462,7 @@ goodlinks edit <id> --summary "<agent summary>" --add-tag ai --add-tag product -
 
 ```bash
 goodlinks list unread --limit 10 --fields id,title,url,summary,tags,wordCount
-goodlinks content <id> --format markdown --max-chars 12000
+goodlinks content <id> --format markdown
 goodlinks edit <id> --summary "<400 chars max>" --add-tag summarized
 ```
 
@@ -553,6 +554,7 @@ goodlinks edit <id> --add-tag <final-tag> --remove-tag inbox
 - 真实删除必须显式传 `--yes`。
 - 传了 `--yes` 后直接执行删除，不再追加 TTY 二次确认。
 - `content` 默认 `autoDownload=true`，保证优先拿到可读正文。
+- `content` 默认不截断；需要预览、批量维护或控制输出时显式传 `--max-chars`。
 - 如果调用方只想读取 GoodLinks 已缓存内容，可传 `--auto-download=false`。
 
 ## 风险清单
@@ -561,7 +563,7 @@ goodlinks edit <id> --add-tag <final-tag> --remove-tag inbox
 | --- | --- | --- |
 | GoodLinks app/API 没启动 | CLI 调用失败 | `doctor` 给出明确诊断 |
 | token 缺失或无效 | 所有请求失败 | config/env 解析和红acted diagnostics |
-| 读取过多正文 | token 浪费 | list/search 默认只取 metadata；content 默认 `--max-chars` |
+| 读取过多正文 | token 浪费 | 先用 list/search/highlights/wordCount 缩小候选集；只有预览或批量维护时使用 `--max-chars` |
 | summary 超过 400 字符 | API 拒绝或行为不符合预期 | 请求前本地校验长度 |
 | 误用全量 `tags` 覆盖 | 标签丢失 | 默认推荐 add/remove；`--tags` 强提醒 |
 | 删除错 ID | 内容丢失，虽然可能进 trash | 默认 dry-run；真实删除必须 `--yes` |
