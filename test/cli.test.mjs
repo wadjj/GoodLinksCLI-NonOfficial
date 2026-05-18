@@ -170,3 +170,29 @@ test("supports fields projection and table output for list", async () => {
   assert.match(stdout, /abc\s+Title/);
   assert.doesNotMatch(stdout, /example\.com/);
 });
+
+test("supports fields projection for get", async () => {
+  let stdout = "";
+  const client = {
+    async getLinkById(id) {
+      assert.equal(id, "abc");
+      return {
+        id: "abc",
+        title: "Title",
+        url: "https://example.com",
+        summary: "Hidden"
+      };
+    }
+  };
+
+  const exitCode = await run(["get", "abc", "--fields", "id,title"], {
+    client,
+    stdout: (text) => {
+      stdout += text;
+    },
+    stderr: () => {}
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(JSON.parse(stdout), { id: "abc", title: "Title" });
+});

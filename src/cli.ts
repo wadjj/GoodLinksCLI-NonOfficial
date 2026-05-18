@@ -162,7 +162,7 @@ export async function run(
         autoDownload: booleanOption(parsed.options.autoDownload),
         maxChars: numberOption(parsed.options.maxChars)
       });
-      stdout(formatOutput(result, parsed.options));
+      stdout(formatOutput(applyFields(result, parsed.options), parsed.options));
       return 0;
     }
 
