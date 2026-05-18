@@ -205,6 +205,7 @@ goodlinks config get --json
 goodlinks list unread --limit 20
 goodlinks list untagged --limit 50 --fields id,title,url,summary,tags
 goodlinks list starred --include-read --search agents --tag ai --json
+goodlinks list all --all-pages --fields id,title,url,wordCount
 ```
 
 支持参数：
@@ -220,6 +221,7 @@ goodlinks list starred --include-read --search agents --tag ai --json
 
 - `limit=20`
 - 不读取正文
+- `--all-pages` 开启后，`limit` 作为 page size 使用，并从 `offset` 开始连续读取直到 API 返回 `hasMore=false`。
 
 ### `goodlinks search [query]`
 
@@ -231,6 +233,7 @@ goodlinks list starred --include-read --search agents --tag ai --json
 goodlinks search "agent memory" --limit 10
 goodlinks search --tag ai --read=false --sort newestSaved
 goodlinks search --word-count-min 1000 --word-count-max 6000 --tagged=false
+goodlinks search "agent memory" --all-pages --fields id,title,url,summary,tags,wordCount
 ```
 
 支持过滤：
@@ -250,6 +253,64 @@ goodlinks search --word-count-min 1000 --word-count-max 6000 --tagged=false
 - `--limit <1..1000>`
 - `--offset <n>`
 - `--all-pages`
+
+默认行为：
+
+- 不读取正文。
+- `--all-pages` 开启后，返回完整候选集合；适合 agent 需要全面检索时使用。
+
+### `goodlinks stats`
+
+基于 link metadata 统计资料库分布，不读取正文，也不触发正文下载。
+
+示例：
+
+```bash
+goodlinks stats
+goodlinks stats --tag topic/ai
+goodlinks stats --search "agent memory"
+```
+
+输出：
+
+```json
+{
+  "total": 59,
+  "counts": {
+    "read": 12,
+    "unread": 47,
+    "starred": 8,
+    "highlighted": 5
+  },
+  "wordCount": {
+    "known": 32,
+    "missing": 27,
+    "sum": 92264,
+    "average": 2883,
+    "min": 1,
+    "median": 1953,
+    "p75": 2490,
+    "p90": 6094,
+    "max": 24606,
+    "buckets": {
+      "under500": 8,
+      "from500To1999": 9,
+      "from2000To4999": 11,
+      "from5000To9999": 2,
+      "atLeast10000": 2
+    }
+  },
+  "tags": [
+    { "tag": "topic/ai", "count": 12 }
+  ]
+}
+```
+
+用途：
+
+- agent 在读取大量正文前，先判断资料库规模和文章长度分布。
+- 定期维护时找出 `wordCount` 缺失、未读、已高亮或 tag 集中度。
+- 不替代正文检索；如果 metadata 命中候选，后续仍应使用 `content` 读取完整正文。
 
 ### `goodlinks get <id-or-url>`
 

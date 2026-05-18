@@ -196,3 +196,54 @@ test("supports fields projection for get", async () => {
   assert.equal(exitCode, 0);
   assert.deepEqual(JSON.parse(stdout), { id: "abc", title: "Title" });
 });
+
+test("dispatches all-pages list option", async () => {
+  let stdout = "";
+  const client = {
+    async listLinks(options) {
+      assert.deepEqual(options, { list: "all", limit: 2, offset: 0 });
+      return {
+        data: [{ id: "abc", title: "Title", url: "https://example.com" }],
+        hasMore: false
+      };
+    }
+  };
+
+  const exitCode = await run(
+    ["list", "all", "--limit", "2", "--all-pages"],
+    {
+      client,
+      stdout: (text) => {
+        stdout += text;
+      },
+      stderr: () => {}
+    }
+  );
+
+  assert.equal(exitCode, 0);
+  assert.equal(JSON.parse(stdout).query.allPages, true);
+});
+
+test("dispatches stats command", async () => {
+  let stdout = "";
+  const client = {
+    async searchLinks(options) {
+      assert.deepEqual(options, { tag: ["topic/ai"], limit: 100, offset: 0 });
+      return {
+        data: [{ id: "abc", tags: ["topic/ai"], wordCount: 1200 }],
+        hasMore: false
+      };
+    }
+  };
+
+  const exitCode = await run(["stats", "--tag", "topic/ai"], {
+    client,
+    stdout: (text) => {
+      stdout += text;
+    },
+    stderr: () => {}
+  });
+
+  assert.equal(exitCode, 0);
+  assert.equal(JSON.parse(stdout).total, 1);
+});
