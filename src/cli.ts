@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { resolveConfig, type ConfigEnv } from "./config.js";
 import { ConfigError, exitCodeForError } from "./errors.js";
@@ -484,6 +486,20 @@ function toCamelCase(value: string): string {
   return value.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isDirectCliInvocation(process.argv[1])) {
   process.exitCode = await run();
+}
+
+function isDirectCliInvocation(argvPath: string | undefined): boolean {
+  if (!argvPath) {
+    return false;
+  }
+
+  try {
+    const invokedPath = realpathSync(argvPath);
+    const modulePath = realpathSync(fileURLToPath(import.meta.url));
+    return invokedPath === modulePath;
+  } catch {
+    return import.meta.url === pathToFileURL(argvPath).href;
+  }
 }
