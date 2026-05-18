@@ -13,6 +13,20 @@ import {
   runSearchCommand,
   runTagsCommand
 } from "./commands/read.js";
+import {
+  runAddCommand,
+  runDeleteCommand,
+  runEditCommand
+} from "./commands/write.js";
+import {
+  runConfigGetCommand,
+  runConfigSetTokenCommand
+} from "./commands/config.js";
+import {
+  runHighlightExportCommand,
+  runHighlightNoteCommand,
+  runHighlightSearchCommand
+} from "./commands/highlights.js";
 
 const helpText = `GoodLinks CLI
 
@@ -21,6 +35,14 @@ Usage:
   goodlinks search [query] [--limit N] [--tag TAG]
   goodlinks get <id-or-url> [--with-content]
   goodlinks content <id> [--format markdown] [--max-chars N]
+  goodlinks add <url> [--tag TAG]
+  goodlinks edit <id> [--add-tag TAG] [--remove-tag TAG]
+  goodlinks delete <id...> [--yes]
+  goodlinks config set-token [--token TOKEN]
+  goodlinks config get
+  goodlinks highlights search [query]
+  goodlinks highlights note <highlight-id> [--note TEXT|--clear]
+  goodlinks highlights export <link-id>
   goodlinks tags
   goodlinks doctor
   goodlinks --help
@@ -60,6 +82,31 @@ export async function run(
     ) {
       stdout(helpText);
       return 0;
+    }
+
+    if (command === "config") {
+      const subcommand = requirePosition(positionals[0], "config command");
+      if (subcommand === "set-token") {
+        stdout(
+          formatJson(
+            await runConfigSetTokenCommand({
+              token: stringOption(parsed.options.token),
+              configPath: deps.configPath
+            })
+          )
+        );
+        return 0;
+      }
+
+      if (subcommand === "get") {
+        stdout(
+          formatJson(await runConfigGetCommand({ configPath: deps.configPath }))
+        );
+        return 0;
+      }
+
+      stderr(`Unknown config command: ${subcommand}\n`);
+      return 2;
     }
 
     const client = await getClient(parsed.options, deps);
@@ -131,6 +178,81 @@ export async function run(
     if (command === "tags") {
       stdout(formatJson(await runTagsCommand(client)));
       return 0;
+    }
+
+    if (command === "add") {
+      const url = requirePosition(positionals[0], "url");
+      const result = await runAddCommand(client, url, {
+        title: stringOption(parsed.options.title),
+        summary: stringOption(parsed.options.summary),
+        tag: stringArrayOption(parsed.options.tag),
+        read: booleanOption(parsed.options.read),
+        starred: booleanOption(parsed.options.starred),
+        addedAt: stringOption(parsed.options.addedAt)
+      });
+      stdout(formatJson(result));
+      return 0;
+    }
+
+    if (command === "edit") {
+      const id = requirePosition(positionals[0], "id");
+      const result = await runEditCommand(client, id, {
+        title: stringOption(parsed.options.title),
+        summary: stringOption(parsed.options.summary),
+        read: booleanOption(parsed.options.read),
+        starred: booleanOption(parsed.options.starred),
+        addTag: stringArrayOption(parsed.options.addTag),
+        removeTag: stringArrayOption(parsed.options.removeTag),
+        tags: csvArrayOption(parsed.options.tags)
+      });
+      stdout(formatJson(result));
+      return 0;
+    }
+
+    if (command === "delete") {
+      const result = await runDeleteCommand(client, positionals, {
+        yes: booleanOption(parsed.options.yes)
+      });
+      stdout(formatJson(result));
+      return 0;
+    }
+
+    if (command === "highlights") {
+      const subcommand = requirePosition(positionals[0], "highlights command");
+      if (subcommand === "search") {
+        const result = await runHighlightSearchCommand(client, {
+          q: positionals[1] ?? stringOption(parsed.options.q),
+          linkID: stringOption(parsed.options.linkId),
+          content: stringOption(parsed.options.content),
+          note: stringOption(parsed.options.note),
+          createdAfter: stringOption(parsed.options.createdAfter),
+          createdBefore: stringOption(parsed.options.createdBefore),
+          sort: stringOption(parsed.options.sort),
+          limit: numberOption(parsed.options.limit),
+          offset: numberOption(parsed.options.offset)
+        });
+        stdout(formatJson(result));
+        return 0;
+      }
+
+      if (subcommand === "note") {
+        const id = requirePosition(positionals[1], "highlight-id");
+        const result = await runHighlightNoteCommand(client, id, {
+          note: stringOption(parsed.options.note),
+          clear: booleanOption(parsed.options.clear)
+        });
+        stdout(formatJson(result));
+        return 0;
+      }
+
+      if (subcommand === "export") {
+        const id = requirePosition(positionals[1], "link-id");
+        stdout(formatJson(await runHighlightExportCommand(client, id)));
+        return 0;
+      }
+
+      stderr(`Unknown highlights command: ${subcommand}\n`);
+      return 2;
     }
 
     stderr(`Unknown command: ${command}\n`);
@@ -247,6 +369,22 @@ function stringArrayOption(
   }
 
   return undefined;
+}
+
+function csvArrayOption(
+  value: string | boolean | string[] | undefined
+): string[] | undefined {
+  const values = stringArrayOption(value);
+  if (values === undefined) {
+    return undefined;
+  }
+
+  return values.flatMap((item) =>
+    item
+      .split(",")
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0)
+  );
 }
 
 function numberOption(
