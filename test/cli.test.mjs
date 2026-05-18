@@ -136,3 +136,37 @@ test("dispatches config set-token and config get", async () => {
   assert.equal(getCode, 0);
   assert.deepEqual(JSON.parse(stdout), { token: "abcd...5678" });
 });
+
+test("supports fields projection and table output for list", async () => {
+  let stdout = "";
+  const client = {
+    async listLinks() {
+      return {
+        data: [
+          {
+            id: "abc",
+            title: "Title",
+            url: "https://example.com"
+          }
+        ],
+        hasMore: false
+      };
+    }
+  };
+
+  const exitCode = await run(
+    ["list", "unread", "--fields", "id,title", "--table"],
+    {
+      client,
+      stdout: (text) => {
+        stdout += text;
+      },
+      stderr: () => {}
+    }
+  );
+
+  assert.equal(exitCode, 0);
+  assert.match(stdout, /id\s+title/);
+  assert.match(stdout, /abc\s+Title/);
+  assert.doesNotMatch(stdout, /example\.com/);
+});

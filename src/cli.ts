@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { resolveConfig, type ConfigEnv } from "./config.js";
 import { ConfigError, exitCodeForError } from "./errors.js";
 import { GoodLinksClient } from "./goodlinks-client.js";
-import { formatJson } from "./output.js";
+import { formatJson, formatTable, projectFields } from "./output.js";
 import {
   runContentCommand,
   runGetCommand,
@@ -126,7 +126,7 @@ export async function run(
         limit: numberOption(parsed.options.limit),
         offset: numberOption(parsed.options.offset)
       });
-      stdout(formatJson(result));
+      stdout(formatOutput(applyFields(result, parsed.options), parsed.options));
       return 0;
     }
 
@@ -148,7 +148,7 @@ export async function run(
         limit: numberOption(parsed.options.limit),
         offset: numberOption(parsed.options.offset)
       });
-      stdout(formatJson(result));
+      stdout(formatOutput(applyFields(result, parsed.options), parsed.options));
       return 0;
     }
 
@@ -160,7 +160,7 @@ export async function run(
         autoDownload: booleanOption(parsed.options.autoDownload),
         maxChars: numberOption(parsed.options.maxChars)
       });
-      stdout(formatJson(result));
+      stdout(formatOutput(result, parsed.options));
       return 0;
     }
 
@@ -171,12 +171,12 @@ export async function run(
         autoDownload: booleanOption(parsed.options.autoDownload),
         maxChars: numberOption(parsed.options.maxChars)
       });
-      stdout(formatJson(result));
+      stdout(formatOutput(result, parsed.options));
       return 0;
     }
 
     if (command === "tags") {
-      stdout(formatJson(await runTagsCommand(client)));
+      stdout(formatOutput(await runTagsCommand(client), parsed.options));
       return 0;
     }
 
@@ -190,7 +190,7 @@ export async function run(
         starred: booleanOption(parsed.options.starred),
         addedAt: stringOption(parsed.options.addedAt)
       });
-      stdout(formatJson(result));
+      stdout(formatOutput(result, parsed.options));
       return 0;
     }
 
@@ -205,7 +205,7 @@ export async function run(
         removeTag: stringArrayOption(parsed.options.removeTag),
         tags: csvArrayOption(parsed.options.tags)
       });
-      stdout(formatJson(result));
+      stdout(formatOutput(result, parsed.options));
       return 0;
     }
 
@@ -213,7 +213,7 @@ export async function run(
       const result = await runDeleteCommand(client, positionals, {
         yes: booleanOption(parsed.options.yes)
       });
-      stdout(formatJson(result));
+      stdout(formatOutput(result, parsed.options));
       return 0;
     }
 
@@ -231,7 +231,7 @@ export async function run(
           limit: numberOption(parsed.options.limit),
           offset: numberOption(parsed.options.offset)
         });
-        stdout(formatJson(result));
+        stdout(formatOutput(result, parsed.options));
         return 0;
       }
 
@@ -241,13 +241,15 @@ export async function run(
           note: stringOption(parsed.options.note),
           clear: booleanOption(parsed.options.clear)
         });
-        stdout(formatJson(result));
+        stdout(formatOutput(result, parsed.options));
         return 0;
       }
 
       if (subcommand === "export") {
         const id = requirePosition(positionals[1], "link-id");
-        stdout(formatJson(await runHighlightExportCommand(client, id)));
+        stdout(
+          formatOutput(await runHighlightExportCommand(client, id), parsed.options)
+        );
         return 0;
       }
 
@@ -385,6 +387,64 @@ function csvArrayOption(
       .map((part) => part.trim())
       .filter((part) => part.length > 0)
   );
+}
+
+function applyFields(
+  value: unknown,
+  options: Record<string, string | boolean | string[]>
+): unknown {
+  const fields = csvArrayOption(options.fields);
+  if (fields === undefined || fields.length === 0) {
+    return value;
+  }
+
+  if (isDataCollection(value)) {
+    return {
+      ...value,
+      data: value.data.map((item) => projectFields(item, fields))
+    };
+  }
+
+  if (isPlainObject(value)) {
+    return projectFields(value, fields);
+  }
+
+  return value;
+}
+
+function formatOutput(
+  value: unknown,
+  options: Record<string, string | boolean | string[]>
+): string {
+  if (booleanOption(options.table)) {
+    if (isDataCollection(value)) {
+      return formatTable(value.data);
+    }
+
+    if (Array.isArray(value)) {
+      return `${value.join("\n")}\n`;
+    }
+
+    if (isPlainObject(value)) {
+      return formatTable([value]);
+    }
+  }
+
+  return formatJson(value);
+}
+
+function isDataCollection(
+  value: unknown
+): value is { data: Record<string, unknown>[] } {
+  return (
+    isPlainObject(value) &&
+    Array.isArray(value.data) &&
+    value.data.every((item) => isPlainObject(item))
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function numberOption(
