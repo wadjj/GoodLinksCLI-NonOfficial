@@ -35,8 +35,8 @@ GoodLinks 从 3.2 起提供本地 REST API：
 2. 默认省 token：列表和搜索默认只返回紧凑 metadata。
 3. 正文懒加载：`list` / `search` 不自动读取文章正文。
 4. agent 安全：删除、覆盖全部标签等操作必须显式确认。
-5. 脚本友好：所有读命令都支持稳定的 `--json` 输出。
-6. 人也能用：提供 `--table` 和 `--md`，但 agent 工作流优先 JSON。
+5. 脚本友好：读命令默认输出稳定 JSON。
+6. 人也能用：已提供 `--table`；Markdown 输出属于 planned capability，等输出语义稳定后再做。
 7. 不内置 AI：v1 不在 CLI 内调用模型；总结、分类判断由外部 agent 完成，CLI 只负责读写 GoodLinks。
 
 ## 已确认设计决策
@@ -106,11 +106,14 @@ Token 安全规则：
 
 ## 输出模式
 
-所有读命令支持：
+当前读命令支持：
 
-- `--json`：给 agent 和脚本使用的稳定 JSON。
+- 默认 JSON：给 agent 和脚本使用的稳定 JSON。
 - `--table`：给人看的紧凑表格。
-- `--md`：适合复制到笔记或报告的 Markdown。
+
+Planned：
+
+- `--md`：适合复制到笔记或报告的 Markdown 输出，目前尚未实现。
 
 默认值：
 
@@ -330,7 +333,8 @@ goodlinks get abc123 --with-highlights
 - 参数以 `http://` 或 `https://` 开头时，调用 `GET /links?url=...`。
 - 否则调用 `GET /links/{id}`。
 - `--with-content` 会额外请求 `/links/{id}/content`。
-- `--with-highlights` 会按 `linkID` 搜索 highlights。
+- `--with-highlights` 会按 `linkID` 搜索 highlights，并返回 `highlights` 与 `highlightsTruncated`。
+- 如果 `highlightsTruncated=true`，说明 GoodLinks API 还有更多 highlight 分页；后续用 `highlights search --link-id <id>` 继续读取。
 - `--max-chars` 会截断正文，并返回 `truncated: true`。
 
 ### `goodlinks content <id>`
@@ -349,7 +353,10 @@ goodlinks content abc123 --format plaintext --auto-download=false
 - `--format html|plaintext|markdown`
 - `--auto-download true|false`
 - `--max-chars <n>`
-- `--output <path>`，用于把大正文写到本地文件
+
+Planned：
+
+- `--output <path>`，用于把大正文写到本地文件，目前尚未实现。
 
 默认：
 
@@ -477,7 +484,10 @@ goodlinks highlights search --created-after 2026-05-01T00:00:00Z
 - `--sort newest|oldest|linkID|content|note`
 - `--limit <1..1000>`
 - `--offset <n>`
-- `--all-pages`
+
+Planned：
+
+- `--all-pages`，用于遍历全部 highlight search 分页结果，目前尚未实现。
 
 ### `goodlinks highlights note <highlight-id>`
 
@@ -502,8 +512,11 @@ goodlinks highlights note highlight123 --clear
 
 ```bash
 goodlinks highlights export abc123
-goodlinks highlights export abc123 --output highlights.md
 ```
+
+Planned：
+
+- `--output <path>`，用于把导出内容写到文件，目前尚未实现。
 
 ## Agent 优化工作流
 

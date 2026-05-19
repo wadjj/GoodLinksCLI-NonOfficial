@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   runContentCommand,
+  runGetCommand,
   runListCommand,
   runSearchCommand,
   runStatsCommand,
@@ -154,6 +155,83 @@ test("stats command summarizes metadata without reading content", async () => {
     { tag: "topic/ai", count: 2 },
     { tag: "source/blog", count: 1 }
   ]);
+});
+
+test("get command can include highlights", async () => {
+  const calls = [];
+  const client = {
+    async getLinkById(id) {
+      calls.push({ method: "getLinkById", id });
+      return { id: "abc", title: "Title", url: "https://example.com" };
+    },
+    async searchHighlights(options) {
+      calls.push({ method: "searchHighlights", options });
+      return {
+        data: [
+          {
+            id: "h1",
+            linkID: "abc",
+            content: "Important quote",
+            createdAt: "2026-05-19T00:00:00Z"
+          }
+        ],
+        hasMore: false
+      };
+    }
+  };
+
+  const result = await runGetCommand(client, "abc", {
+    withHighlights: true
+  });
+
+  assert.deepEqual(calls, [
+    { method: "getLinkById", id: "abc" },
+    { method: "searchHighlights", options: { linkID: "abc" } }
+  ]);
+  assert.deepEqual(result.highlights, [
+    {
+      id: "h1",
+      linkID: "abc",
+      content: "Important quote",
+      createdAt: "2026-05-19T00:00:00Z"
+    }
+  ]);
+});
+
+test("get command reports truncated highlights when more pages exist", async () => {
+  const client = {
+    async getLinkById() {
+      return { id: "abc", title: "Title", url: "https://example.com" };
+    },
+    async searchHighlights() {
+      return {
+        data: [{ id: "h1", linkID: "abc", content: "quote", createdAt: "now" }],
+        hasMore: true
+      };
+    }
+  };
+
+  const result = await runGetCommand(client, "abc", {
+    withHighlights: true
+  });
+
+  assert.equal(result.highlightsTruncated, true);
+});
+
+test("get command does not fetch highlights by default", async () => {
+  const client = {
+    async getLinkById() {
+      return { id: "abc", title: "Title", url: "https://example.com" };
+    },
+    async searchHighlights() {
+      throw new Error("searchHighlights should not be called by default");
+    }
+  };
+
+  const result = await runGetCommand(client, "abc");
+
+  assert.equal(result.highlights, undefined);
+  assert.equal(result.highlightsTruncated, undefined);
 });
 
 test("content command returns truncated JSON-ready content", async () => {

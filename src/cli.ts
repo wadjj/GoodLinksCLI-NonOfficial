@@ -172,6 +172,7 @@ export async function run(
       const idOrUrl = requirePosition(positionals[0], "id-or-url");
       const result = await runGetCommand(client, idOrUrl, {
         withContent: booleanOption(parsed.options.withContent),
+        withHighlights: booleanOption(parsed.options.withHighlights),
         contentFormat: contentFormatOption(parsed.options.contentFormat),
         autoDownload: booleanOption(parsed.options.autoDownload),
         maxChars: numberOption(parsed.options.maxChars)

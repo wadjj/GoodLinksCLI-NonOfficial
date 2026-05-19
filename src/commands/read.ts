@@ -8,7 +8,13 @@ import { compactLinks, truncateText } from "../output.js";
 
 type ReadClient = Pick<
   GoodLinksClient,
-  "listLinks" | "searchLinks" | "getLinkById" | "getLinkByUrl" | "getContent" | "getTags"
+  | "listLinks"
+  | "searchLinks"
+  | "getLinkById"
+  | "getLinkByUrl"
+  | "getContent"
+  | "getTags"
+  | "searchHighlights"
 >;
 
 export interface ListCommandOptions {
@@ -37,6 +43,7 @@ export interface SearchCommandOptions extends ListCommandOptions {
 
 export interface GetCommandOptions {
   withContent?: boolean;
+  withHighlights?: boolean;
   contentFormat?: ContentOptions["format"];
   autoDownload?: boolean;
   maxChars?: number;
@@ -143,6 +150,12 @@ export async function runGetCommand(
     result.content = truncated.text;
     result.contentFormat = format;
     result.truncated = truncated.truncated;
+  }
+
+  if (options.withHighlights) {
+    const highlights = await client.searchHighlights({ linkID: link.id });
+    result.highlights = highlights.data;
+    result.highlightsTruncated = highlights.hasMore === true;
   }
 
   return result;

@@ -197,6 +197,40 @@ test("supports fields projection for get", async () => {
   assert.deepEqual(JSON.parse(stdout), { id: "abc", title: "Title" });
 });
 
+test("dispatches get with highlights", async () => {
+  let stdout = "";
+  const client = {
+    async getLinkById(id) {
+      assert.equal(id, "abc");
+      return {
+        id: "abc",
+        title: "Title",
+        url: "https://example.com"
+      };
+    },
+    async searchHighlights(options) {
+      assert.deepEqual(options, { linkID: "abc" });
+      return {
+        data: [{ id: "h1", linkID: "abc", content: "quote", createdAt: "now" }],
+        hasMore: false
+      };
+    }
+  };
+
+  const exitCode = await run(["get", "abc", "--with-highlights"], {
+    client,
+    stdout: (text) => {
+      stdout += text;
+    },
+    stderr: () => {}
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(JSON.parse(stdout).highlights, [
+    { id: "h1", linkID: "abc", content: "quote", createdAt: "now" }
+  ]);
+});
+
 test("dispatches all-pages list option", async () => {
   let stdout = "";
   const client = {
