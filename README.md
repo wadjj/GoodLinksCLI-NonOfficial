@@ -83,14 +83,19 @@ export GOODLINKS_API_BASE_URL="http://localhost:9428/api/v1"
 goodlinks doctor
 goodlinks tags
 goodlinks list unread --limit 20
+goodlinks list all --all-pages --fields id,title,url,wordCount
 goodlinks list untagged --limit 50 --fields id,title,url,summary,tags
 goodlinks search "agent memory" --tag topic/ai --limit 10
+goodlinks search "agent memory" --all-pages --fields id,title,url,summary,tags,wordCount
+goodlinks stats
 goodlinks get abc123
 goodlinks get abc123 --with-content --max-chars 8000
 goodlinks content abc123 --format markdown
 goodlinks content abc123 --format markdown --max-chars 12000
 goodlinks content abc123 --auto-download=false
 ```
+
+`--all-pages` 会遍历完整分页结果，适合 agent 需要完整候选集时使用。`goodlinks stats` 只读取 metadata，不读取或下载文章正文。
 
 给人临时看时可以用表格：
 

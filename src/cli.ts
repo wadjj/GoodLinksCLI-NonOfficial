@@ -13,6 +13,7 @@ import {
   runGetCommand,
   runListCommand,
   runSearchCommand,
+  runStatsCommand,
   runTagsCommand
 } from "./commands/read.js";
 import {
@@ -35,6 +36,7 @@ const helpText = `GoodLinks CLI
 Usage:
   goodlinks list <list> [--limit N] [--tag TAG]
   goodlinks search [query] [--limit N] [--tag TAG]
+  goodlinks stats [--tag TAG]
   goodlinks get <id-or-url> [--with-content]
   goodlinks content <id> [--format markdown] [--max-chars N]
   goodlinks add <url> [--tag TAG]
@@ -126,7 +128,8 @@ export async function run(
         tag: stringArrayOption(parsed.options.tag),
         includeRead: booleanOption(parsed.options.includeRead),
         limit: numberOption(parsed.options.limit),
-        offset: numberOption(parsed.options.offset)
+        offset: numberOption(parsed.options.offset),
+        allPages: booleanOption(parsed.options.allPages)
       });
       stdout(formatOutput(applyFields(result, parsed.options), parsed.options));
       return 0;
@@ -148,9 +151,20 @@ export async function run(
         readBefore: stringOption(parsed.options.readBefore),
         sort: stringOption(parsed.options.sort),
         limit: numberOption(parsed.options.limit),
-        offset: numberOption(parsed.options.offset)
+        offset: numberOption(parsed.options.offset),
+        allPages: booleanOption(parsed.options.allPages)
       });
       stdout(formatOutput(applyFields(result, parsed.options), parsed.options));
+      return 0;
+    }
+
+    if (command === "stats") {
+      const result = await runStatsCommand(client, {
+        search: stringOption(parsed.options.search),
+        tag: stringArrayOption(parsed.options.tag),
+        limit: numberOption(parsed.options.limit)
+      });
+      stdout(formatOutput(result, parsed.options));
       return 0;
     }
 
