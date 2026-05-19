@@ -1,8 +1,12 @@
-# GoodLinks CLI
+# GoodLinks CLI NonOfficial
+
+非官方 GoodLinks 本地 API CLI。这个项目不是 GoodLinks 官方项目，只是一个面向 agent 和本地脚本的轻量封装。
 
 一个给 agent 和本地脚本使用的 GoodLinks 本地 API CLI。
 
 核心目标：典型检索场景下快、准、全。列表和搜索只返回紧凑 metadata；文章正文只有明确调用 `content` 或 `get --with-content` 时才读取；删除默认 dry-run。省 token 重要，但不应牺牲检索准确性。
+
+License: Apache-2.0。
 
 ## 前置条件
 
@@ -17,9 +21,11 @@ GoodLinks API 默认地址：
 http://localhost:9428/api/v1
 ```
 
-## 安装与开发
+## 安装
 
 ```bash
+git clone git@github.com:wadjj/GoodLinksCLI-NonOfficial.git
+cd GoodLinksCLI-NonOfficial
 npm install
 npm test
 npm run build
@@ -38,6 +44,8 @@ npm link
 goodlinks --help
 ```
 
+这个包目前面向本地使用，没有发布到 npm。
+
 ## 配置 token
 
 推荐交互式输入，CLI 会保存到 `~/.config/goodlinks-cli/config.json`，并用 `0600` 权限创建文件：
@@ -51,6 +59,8 @@ goodlinks config set-token
 ```bash
 goodlinks config set-token --token "YOUR_TOKEN"
 ```
+
+注意：`--token` 方式可能把 token 留在 shell history 里。日常更推荐交互式输入。
 
 查看配置时 token 会被隐藏：
 
@@ -123,6 +133,24 @@ goodlinks highlights note highlight123 --clear
 goodlinks highlights export abc123
 ```
 
+## Smoke Checklist
+
+本地改动后建议至少跑：
+
+```bash
+npm test
+goodlinks doctor
+goodlinks list unread --limit 5
+```
+
+如果改到写命令，可以用 disposable URL 做低风险验证：
+
+```bash
+goodlinks add https://example.com/goodlinks-cli-smoke --tag cli-test
+goodlinks delete <new-id>
+goodlinks delete <new-id> --yes
+```
+
 ## Agent 使用习惯
 
 这些标签不是 CLI 硬编码规则，只是推荐给 agent 的整理习惯：
@@ -151,3 +179,11 @@ goodlinks edit <id> --summary "<400 字符以内摘要>" --add-tag summarized --
 - `content` 默认 `autoDownload=true`，优先保证拿到正文；如果只想读已缓存内容，用 `--auto-download=false`。
 - `content` 默认不截断；需要预览、批量维护或控制输出时，显式传 `--max-chars`。
 - CLI 不内置 AI summarization；总结由外部 agent 完成，CLI 只负责读写 GoodLinks。
+
+## 公开仓库边界
+
+- 不要提交真实 GoodLinks API token。
+- 不要提交 `~/.config/goodlinks-cli/config.json`。
+- 不要提交私有文章导出、个人笔记或本地运行日志。
+- 本地个人材料放在 `Personal/`，该目录已被 Git 忽略。
+- 文档里使用 `~/.config/...` 这类通用路径，不写用户本地绝对路径。
