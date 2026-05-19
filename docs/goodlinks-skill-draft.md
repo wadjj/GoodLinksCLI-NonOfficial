@@ -13,7 +13,7 @@ Default tool: the local `goodlinks` CLI.
 
 - Use `goodlinks` CLI before raw API calls.
 - Optimize for fast, accurate, complete answers first; token efficiency is important but secondary.
-- Control cost by narrowing candidates with metadata first: `list`, `search`, `tags`, `highlights search`, `--fields`, `--limit`, and `wordCount` filters.
+- Control cost by narrowing candidates with metadata first: `stats`, `list`, `search`, `tags`, `highlights search`, `--fields`, `--limit`, `--all-pages`, and `wordCount` filters.
 - Fetch article body only after narrowing candidates with `content` or `get --with-content`.
 - For selected high-relevance candidates, prefer complete content unless the task is only preview/bulk maintenance.
 - Default to JSON for agent work; use `--fields` to reduce output.
@@ -27,14 +27,17 @@ Find candidate links:
 
 ```bash
 goodlinks search "<query>" --limit 10 --fields id,title,url,summary,tags,wordCount,readAt
+goodlinks search "<query>" --all-pages --fields id,title,url,summary,tags,wordCount,readAt
 goodlinks list unread --limit 20 --fields id,title,url,summary,tags,wordCount,addedAt
 goodlinks list untagged --limit 20 --fields id,title,url,summary,wordCount,addedAt
+goodlinks stats
 ```
 
 Read one item:
 
 ```bash
 goodlinks get <id> --fields id,title,url,summary,tags,wordCount
+goodlinks get <id> --with-highlights --fields id,title,highlights
 goodlinks content <id> --format markdown
 ```
 
@@ -51,9 +54,11 @@ When the user asks to find information inside GoodLinks, use retrieval that favo
 1. Search/list metadata first.
 2. Check highlights if the query may match highlighted passages.
 3. Use `wordCount` and metadata to prioritize candidates, not to avoid reading relevant ones.
-4. Read likely candidates completely when the candidate set is small.
-5. Use `--max-chars` only for preview, broad triage, or bulk maintenance.
-6. Only say "not found" after checking the relevant candidates deeply enough for the task.
+4. Use `--all-pages` when the task needs complete recall rather than a first page sample.
+5. Use `goodlinks stats` when deciding whether to read broadly or inspect library distribution without fetching bodies.
+6. Read likely candidates completely when the candidate set is small.
+7. Use `--max-chars` only for preview, broad triage, or bulk maintenance.
+8. Only say "not found" after checking the relevant candidates deeply enough for the task.
 
 Do not treat "not present in a capped excerpt" as evidence that the article does not contain the information.
 
@@ -122,8 +127,11 @@ Search highlights before fetching whole articles when highlights may be enough:
 ```bash
 goodlinks highlights search "<query>" --limit 20
 goodlinks highlights search --link-id <id>
+goodlinks get <id> --with-highlights --fields id,title,highlights
 goodlinks highlights export <id>
 ```
+
+If `get --with-highlights` returns `highlightsTruncated: true`, continue with `goodlinks highlights search --link-id <id>` before treating the highlight set as complete.
 
 Edit highlight notes only when the user asks or the workflow clearly requires it:
 
@@ -159,6 +167,7 @@ For read-only validation, run directly:
 goodlinks doctor
 goodlinks tags
 goodlinks list unread --limit 5 --fields id,title,url,summary,tags
+goodlinks stats
 ```
 
 For write validation, create a disposable link and delete only that link:

@@ -33,7 +33,7 @@
 - GoodLinks API 的 `summary` 是可编辑链接描述，不是 GoodLinks GUI 里的 AI Summary。
 - 当前公开 API 没有暴露 GoodLinks AI Summary，也没有触发批量生成 AI Summary 的端点。
 - 官方 API 没有看到自定义 list/folder 的创建或编辑能力，v1 的组织能力以 tag 和内置 list 为核心。
-- 资料库未来可能增长 10-20 倍，所以分页和统计能力要补齐。
+- 资料库未来可能增长 10-20 倍；基础分页和 metadata 统计已经补齐，后续要继续避免文档承诺领先于实现。
 
 ## 设计原则
 
@@ -48,9 +48,11 @@
 
 ## PR 拆分
 
-### PR 1: Public Docs and Plan Refresh
+### PR 1: Public Docs and Plan Refresh - 已完成并合并
 
 **目标：** 让公开仓库首页和计划文档准确反映当前项目状态，并把隐私、安全、安装、验证路径讲清楚。
+
+**结果：** 已合并到 `main`，merge commit `a9b7976`。
 
 **Files:**
 
@@ -59,15 +61,15 @@
 
 **Steps:**
 
-- [ ] 在 README 顶部加入 unofficial disclaimer，说明本项目不是 GoodLinks 官方项目。
-- [ ] 补充 Apache-2.0 license 说明。
-- [ ] 补充从 GitHub clone、安装、build、`npm link` 的完整路径。
-- [ ] 补充 token 安全说明：推荐交互式输入，`--token` 可能进入 shell history。
-- [ ] 补充公开仓库边界：不要提交 config、token、私有导出、`Personal/`。
-- [ ] 补充 smoke checklist：build/test、doctor、list、disposable link 写入/删除。
-- [ ] 更新本计划，删除“尚未实现”的过期表述。
-- [ ] Run: `npm test`。
-- [ ] Commit: `docs: refresh public project plan`。
+- [x] 在 README 顶部加入 unofficial disclaimer，说明本项目不是 GoodLinks 官方项目。
+- [x] 补充 Apache-2.0 license 说明。
+- [x] 补充从 GitHub clone、安装、build、`npm link` 的完整路径。
+- [x] 补充 token 安全说明：推荐交互式输入，`--token` 可能进入 shell history。
+- [x] 补充公开仓库边界：不要提交 config、token、私有导出、`Personal/`。
+- [x] 补充 smoke checklist：build/test、doctor、list、disposable link 写入/删除。
+- [x] 更新本计划，删除“尚未实现”的过期表述。
+- [x] Run: `npm test`。
+- [x] Commit: `docs: refresh public project plan`。
 
 **Acceptance:**
 
@@ -75,9 +77,11 @@
 - 文档不包含真实 token、私有数据或用户本地绝对路径。
 - 计划文档能解释当前实现状态和下一步 PR。
 
-### PR 2: Pagination and Library Stats
+### PR 2: Pagination and Library Stats - 已完成并合并
 
 **目标：** 支持未来 10-20 倍资料库规模下的完整 metadata 遍历，并提供不输出全文的资料库统计能力。
+
+**结果：** 已合并到 `main`，merge commit `3be96e8`。
 
 **Files:**
 
@@ -86,22 +90,51 @@
 - Modify: `src/goodlinks-client.ts` if query types need widening
 - Modify: `README.md`
 - Modify: `docs/cli-spec.md`
+- Modify: `docs/goodlinks-skill-draft.md`
 - Modify: `docs/superpowers/plans/2026-05-18-goodlinks-cli.md`
 - Test: `test/commands-read.test.mjs`
 - Test: `test/cli.test.mjs`
 
 **Steps:**
 
-- [ ] 写 `runListCommand` 的 failing test：`allPages: true` 时按 `limit` / `offset` 连续读取，直到 `hasMore` 为 false。
-- [ ] 写 `runSearchCommand` 的 failing test：搜索同样支持 `allPages: true`。
-- [ ] 实现 shared pagination helper，默认 `limit=20`，`--all-pages` 未开启时保持现有单页行为。
-- [ ] 在 `src/cli.ts` 把 `--all-pages` 传给 `list` 和 `search`。
-- [ ] 写 `runStatsCommand` 的 failing test：只用 metadata 统计 total、wordCount 分布、missing wordCount、tag counts、read/starred/highlighted counts。
-- [ ] 实现 `goodlinks stats`，默认通过 `search --all-pages` 风格遍历 metadata，不读取正文。
-- [ ] 在 help、README、CLI spec 中补充 `--all-pages` 和 `stats`。
-- [ ] Run: `npm test`。
-- [ ] 如可用，再运行真实 smoke：`goodlinks stats` 和一个小 limit 的 `list --all-pages`。
-- [ ] Commit: `feat: add pagination and stats`。
+- [x] 写 `runListCommand` 的 failing test：`allPages: true` 时按 `limit` / `offset` 连续读取，直到 `hasMore` 为 false。
+- [x] 写 `runSearchCommand` 的 failing test：搜索同样支持 `allPages: true`。
+- [x] 实现 shared pagination helper，`--all-pages` 未开启时保持现有单页行为。
+- [x] 在 `src/cli.ts` 把 `--all-pages` 传给 `list` 和 `search`。
+- [x] 写 `runStatsCommand` 的 failing test：只用 metadata 统计 total、wordCount 分布、missing wordCount、tag counts、read/starred/highlighted counts。
+- [x] 实现 `goodlinks stats`，默认遍历 metadata，不读取正文。
+- [x] 在 help、README、CLI spec 中补充 `--all-pages` 和 `stats`。
+- [x] Run: `npm test`。
+- [x] 运行真实 smoke：`goodlinks stats` 和一个小 limit 的 `list --all-pages`。
+- [x] Commit: `feat: add pagination and stats`。
+
+### PR 3: Spec Closeout and Get Highlights - 进行中
+
+**目标：** 消除计划/spec 与实现之间的漂移，并补齐最贴近阅读工作流的小功能：`goodlinks get <id-or-url> --with-highlights`。
+
+**Files:**
+
+- Modify: `src/cli.ts`
+- Modify: `src/commands/read.ts`
+- Modify: `README.md`
+- Modify: `docs/cli-spec.md`
+- Modify: `docs/superpowers/plans/2026-05-18-goodlinks-cli.md`
+- Test: `test/commands-read.test.mjs`
+- Test: `test/cli.test.mjs`
+
+**Steps:**
+
+- [x] 写 `runGetCommand` 的 failing test：`withHighlights: true` 时按 link id 调用 `searchHighlights({ linkID })`。
+- [x] 写 CLI dispatch failing test：`goodlinks get abc --with-highlights` 输出 highlights。
+- [x] 实现 `GetCommandOptions.withHighlights`。
+- [x] 在 `src/cli.ts` 接入 `--with-highlights`。
+- [x] 更新 README 示例。
+- [x] 更新 CLI spec：把未实现的 `--md`、`content --output`、`highlights search --all-pages`、`highlights export --output` 标为 planned。
+- [x] 更新 GoodLinks Skill 草稿，并同步到本机已安装 Skill。
+- [x] 更新本计划：PR 1 / PR 2 标为已完成。
+- [x] Run: `npm test`。
+- [x] 运行真实 smoke：`goodlinks get <known-id> --with-highlights --fields id,title,highlights`。
+- [x] Commit: `feat: include highlights in get`。
 
 **Acceptance:**
 
@@ -114,6 +147,9 @@
 
 后续再考虑：
 
+- `content --output <path>`：长正文写入文件，避免终端输出巨大 JSON。
+- `--md`：面向笔记/报告的 Markdown 输出。
+- `highlights search --all-pages`：补齐 highlight 搜索分页。
 - `goodlinks open <id-or-url>`：输出或打开原文链接，方便人类核查。
 - MCP wrapper：当 CLI 语义稳定后，把 `search/list/get/content/add/edit/delete/highlights/stats` 包成 MCP tools。
 - Keychain token storage：如果 CLI 成为长期基础设施，再替代 config file token。

@@ -89,6 +89,7 @@ goodlinks search "agent memory" --tag topic/ai --limit 10
 goodlinks search "agent memory" --all-pages --fields id,title,url,summary,tags,wordCount
 goodlinks stats
 goodlinks get abc123
+goodlinks get abc123 --with-highlights
 goodlinks get abc123 --with-content --max-chars 8000
 goodlinks content abc123 --format markdown
 goodlinks content abc123 --format markdown --max-chars 12000
